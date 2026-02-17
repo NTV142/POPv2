@@ -3,31 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NT Notification</title>
+    <title>NT Timer Notification</title>
 </head>
 <body>
-    <button id="btn" style="padding:20px; font-size:18px;">通知を表示したい</button>
+    <input type="text" id="task" placeholder="通知内容">
+    <input type="time" id="alarmTime">
+    <button id="setBtn">予約する</button>
+    <p id="status"></p>
 
     <script>
-        // 1. Service Workerを登録
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
 
-        // 2. ボタンクリック時の処理
-        document.getElementById('btn').addEventListener('click', async () => {
+        document.getElementById('setBtn').addEventListener('click', async () => {
+            const text = document.getElementById('task').value;
+            const timeVal = document.getElementById('alarmTime').value;
+            const status = document.getElementById('status');
+
+            if (!text || !timeVal) {
+                status.innerText = '内容と時刻を入力してね';
+                return;
+            }
+
             const permission = await Notification.requestPermission();
+            if (permission !== 'granted') return;
+
+            // 時刻の計算
+            const now = new Date();
+            const target = new Date(now.toDateString() + ' ' + timeVal);
             
-            if (permission === 'granted') {
+            let diff = target.getTime() - now.getTime();
+            if (diff < 0) diff += 24 * 60 * 60 * 1000; // 明日の時刻にする
+
+            status.innerText = `${timeVal}に予約しました`;
+
+            // 指定時間後に通知を実行
+            setTimeout(async () => {
                 const reg = await navigator.serviceWorker.ready;
-                // OS標準の通知を呼び出す
-                reg.showNotification('NTからの通知', {
-                    body: 'Android/Windows両対応です！',
+                reg.showNotification('NTタイマー', {
+                    body: text,
                     icon: 'https://ntv142.github.io/NT-HP/favicon.ico'
                 });
-            } else {
-                alert('通知設定を許可してください');
-            }
+            }, diff);
         });
     </script>
 </body>
