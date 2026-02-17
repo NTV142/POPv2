@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>OS通知テスト</title>
+</head>
+<body>
+    <button id="notifyBtn">通知を表示する</button>
+
+    <script>
+        const btn = document.getElementById('notifyBtn');
+
+        btn.addEventListener('click', async () => {
+            // 1. 許可を求める
+            const permission = await Notification.requestPermission();
+
+            // 2. 許可されたら通知を出す
+            if (permission === 'granted') {
+                new Notification('NTからの通知', {
+                    body: 'これはOS標準の通知です。',
+                    tag: 'test-notification'
+                });
+            } else {
+                alert('通知がブロックされています');
+            }
+        });
+    </script>
+</body>
+</html>
