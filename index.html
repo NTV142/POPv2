@@ -2,26 +2,36 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>OS通知テスト</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Test</title>
 </head>
 <body>
-    <button id="notifyBtn">通知を表示する</button>
+    <button id="notifyBtn" style="padding: 20px;">通知をテストする</button>
+    <p id="status"></p>
 
     <script>
         const btn = document.getElementById('notifyBtn');
+        const status = document.getElementById('status');
 
         btn.addEventListener('click', async () => {
-            // 1. 許可を求める
-            const permission = await Notification.requestPermission();
+            if (!("Notification" in window)) {
+                status.innerText = "このブラウザは通知に未対応です";
+                return;
+            }
 
-            // 2. 許可されたら通知を出す
+            const permission = await Notification.requestPermission();
+            status.innerText = `許可状態: ${permission}`;
+
             if (permission === 'granted') {
-                new Notification('NTからの通知', {
-                    body: 'これはOS標準の通知です。',
-                    tag: 'test-notification'
-                });
-            } else {
-                alert('通知がブロックされています');
+                try {
+                    const n = new Notification('NTからの通知', {
+                        body: '通知が正常に動作しました！',
+                        icon: 'https://ntv142.github.io/NT-HP/favicon.ico' // 任意
+                    });
+                    n.onclick = () => { window.focus(); n.close(); };
+                } catch (e) {
+                    status.innerText = `エラー: ${e.message}`;
+                }
             }
         });
     </script>
