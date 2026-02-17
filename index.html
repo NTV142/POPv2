@@ -3,23 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NT Notification Tool</title>
+    <title>NT Notification Tool v2</title>
     <style>
-        /* サイトの文字サイズを約3倍に調整 */
-        body { font-size: 24px; padding: 20px; font-family: sans-serif; }
+        /* ==========================================
+           【設定】ここを変えると全体のサイズが変わります
+           ========================================== */
+        :root {
+            --base-font-size: 28px; /* 基本の文字サイズ */
+            --input-font-size: 32px; /* 入力欄の文字サイズ */
+        }
+
+        body { font-size: var(--base-font-size); padding: 20px; font-family: sans-serif; }
         input, textarea { 
             width: 100%; 
-            font-size: 32px; /* 入力欄を大きく */
-            margin-bottom: 20px; 
+            font-size: var(--input-font-size);
+            margin-bottom: 15px; 
             display: block;
+            box-sizing: border-box;
         }
         button { 
-            padding: 20px; 
-            font-size: 28px; 
+            padding: 15px; 
+            font-size: var(--base-font-size); 
             width: 100%; 
             cursor: pointer;
+            margin-bottom: 10px;
         }
-        #status { color: blue; font-weight: bold; }
+        #status-container {
+            margin-top: 20px;
+            padding: 10px;
+            border-top: 2px solid #ccc;
+        }
+        .status-item { font-size: 20px; color: blue; border-bottom: 1px solid #eee; margin-bottom: 5px; }
+        #clearBtn { background-color: #eee; color: #333; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
@@ -28,48 +43,85 @@
     <input type="text" id="title" placeholder="通知のタイトル">
 
     <label>内容（改行OK）</label>
-    <textarea id="task" placeholder="通知の本文" rows="4"></textarea>
+    <textarea id="task" placeholder="通知の本文" rows="3"></textarea>
 
-    <label>通知時刻</label>
-    <input type="time" id="alarmTime">
+    <label>通知年月日・時刻</label>
+    <input type="datetime-local" id="alarmTime">
 
     <button id="setBtn">通知を予約する</button>
-    <p id="status"></p>
+    
+    <div id="status-container">
+        <button id="clearBtn">履歴をクリア</button>
+        <div id="status-list"></div>
+    </div>
 
     <script>
+        /* ==========================================
+           【設定】通知をクリックした時のリンク先
+           ========================================== */
+        const CLICK_URL = 'https://ntv142.github.io/POPv2/';
+
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+            // リンク先をService Workerに伝える
+            navigator.serviceWorker.register('sw.js?url=' + encodeURIComponent(CLICK_URL));
         }
 
-        document.getElementById('setBtn').addEventListener('click', async () => {
+        const setBtn = document.getElementById('setBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const statusList = document.getElementById('status-list');
+
+        // 初期値として現在時刻をセット
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('alarmTime').value = now.toISOString().slice(0, 16);
+
+        setBtn.addEventListener('click', async () => {
             const title = document.getElementById('title').value || 'NTからの通知';
             const text = document.getElementById('task').value;
             const timeVal = document.getElementById('alarmTime').value;
-            const status = document.getElementById('status');
 
             if (!text || !timeVal) {
-                status.innerText = '内容と時刻を入力してね';
+                alert('内容と日時を入力してね');
+                return;
+            }
+
+            const targetDate = new Date(timeVal);
+            const nowTime = new Date();
+
+            // 過去チェック
+            if (targetDate <= nowTime) {
+                alert('過去の時間は指定できないよ！');
                 return;
             }
 
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') return;
 
-            const now = new Date();
-            const target = new Date(now.toDateString() + ' ' + timeVal);
-            let diff = target.getTime() - now.getTime();
-            if (diff < 0) diff += 24 * 60 * 60 * 1000;
+            const diff = targetDate.getTime() - nowTime.getTime();
 
-            status.innerText = `${timeVal}に予約完了！`;
+            // 履歴に追加
+            const item = document.createElement('div');
+            item.className = 'status-item';
+            item.innerText = `[予約済] ${timeVal}：${title}`;
+            statusList.appendChild(item);
 
+            // タイマー予約
             setTimeout(async () => {
                 const reg = await navigator.serviceWorker.ready;
                 reg.showNotification(title, {
                     body: text,
                     icon: 'https://ntv142.github.io/NT-HP/favicon.ico',
-                    requireInteraction: true
+                    requireInteraction: true,
+                    data: { url: CLICK_URL } // リンク先を渡す
                 });
+                item.style.color = 'gray';
+                item.innerText = `[送信済] ${timeVal}：${title}`;
             }, diff);
+        });
+
+        // 履歴クリア
+        clearBtn.addEventListener('click', () => {
+            statusList.innerHTML = '';
         });
     </script>
 </body>
