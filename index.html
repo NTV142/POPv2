@@ -3,35 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notification Test</title>
+    <title>NT Notification</title>
 </head>
 <body>
-    <button id="notifyBtn" style="padding: 20px;">通知をテストする</button>
-    <p id="status"></p>
+    <button id="btn" style="padding:20px; font-size:18px;">通知を表示する</button>
 
     <script>
-        const btn = document.getElementById('notifyBtn');
-        const status = document.getElementById('status');
+        // 1. Service Workerを登録
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
 
-        btn.addEventListener('click', async () => {
-            if (!("Notification" in window)) {
-                status.innerText = "このブラウザは通知に未対応です";
-                return;
-            }
-
+        // 2. ボタンクリック時の処理
+        document.getElementById('btn').addEventListener('click', async () => {
             const permission = await Notification.requestPermission();
-            status.innerText = `許可状態: ${permission}`;
-
+            
             if (permission === 'granted') {
-                try {
-                    const n = new Notification('NTからの通知', {
-                        body: '通知が正常に動作しました！',
-                        icon: 'https://ntv142.github.io/NT-HP/favicon.ico' // 任意
-                    });
-                    n.onclick = () => { window.focus(); n.close(); };
-                } catch (e) {
-                    status.innerText = `エラー: ${e.message}`;
-                }
+                const reg = await navigator.serviceWorker.ready;
+                // OS標準の通知を呼び出す
+                reg.showNotification('NTからの通知', {
+                    body: 'Android/Windows両対応です！',
+                    icon: 'https://ntv142.github.io/NT-HP/favicon.ico'
+                });
+            } else {
+                alert('通知設定を許可してください');
             }
         });
     </script>
