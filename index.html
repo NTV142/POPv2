@@ -3,12 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NT Timer Notification</title>
+    <title>NT Notification Tool</title>
+    <style>
+        /* サイトの文字サイズを約3倍に調整 */
+        body { font-size: 24px; padding: 20px; font-family: sans-serif; }
+        input, textarea { 
+            width: 100%; 
+            font-size: 32px; /* 入力欄を大きく */
+            margin-bottom: 20px; 
+            display: block;
+        }
+        button { 
+            padding: 20px; 
+            font-size: 28px; 
+            width: 100%; 
+            cursor: pointer;
+        }
+        #status { color: blue; font-weight: bold; }
+    </style>
 </head>
 <body>
-    <input type="text" id="task" placeholder="通知内容">
+
+    <label>件名</label>
+    <input type="text" id="title" placeholder="通知のタイトル">
+
+    <label>内容（改行OK）</label>
+    <textarea id="task" placeholder="通知の本文" rows="4"></textarea>
+
+    <label>通知時刻</label>
     <input type="time" id="alarmTime">
-    <button id="setBtn">予約する</button>
+
+    <button id="setBtn">通知を予約する</button>
     <p id="status"></p>
 
     <script>
@@ -17,6 +42,7 @@
         }
 
         document.getElementById('setBtn').addEventListener('click', async () => {
+            const title = document.getElementById('title').value || 'NTからの通知';
             const text = document.getElementById('task').value;
             const timeVal = document.getElementById('alarmTime').value;
             const status = document.getElementById('status');
@@ -29,21 +55,19 @@
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') return;
 
-            // 時刻の計算
             const now = new Date();
             const target = new Date(now.toDateString() + ' ' + timeVal);
-            
             let diff = target.getTime() - now.getTime();
-            if (diff < 0) diff += 24 * 60 * 60 * 1000; // 明日の時刻にする
+            if (diff < 0) diff += 24 * 60 * 60 * 1000;
 
-            status.innerText = `${timeVal}に予約しました`;
+            status.innerText = `${timeVal}に予約完了！`;
 
-            // 指定時間後に通知を実行
             setTimeout(async () => {
                 const reg = await navigator.serviceWorker.ready;
-                reg.showNotification('NTタイマー', {
+                reg.showNotification(title, {
                     body: text,
-                    icon: 'https://ntv142.github.io/NT-HP/favicon.ico'
+                    icon: 'https://ntv142.github.io/NT-HP/favicon.ico',
+                    requireInteraction: true
                 });
             }, diff);
         });
